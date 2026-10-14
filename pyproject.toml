@@ -1,0 +1,81 @@
+[build-system]
+requires = ["setuptools>=78"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bookreader"
+version = "0.1.0"
+description = "Книжный помощник: читает книги вслух, переводит иностранные на русский и показывает иллюстрации. Работает на CPU, без видеокарты."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "VistDmit" }]
+keywords = ["tts", "ebook", "fb2", "epub", "offline", "translation", "nllb", "silero"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Environment :: Web Environment",
+    "Intended Audience :: End Users/Desktop",
+    "Natural Language :: Russian",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+    "Topic :: Text Processing :: Linguistic",
+]
+
+# Базовый набор лёгкий: без него не работает только синтез и перевод,
+# но разбор книг, веб-читалка и самопроверки уже идут.
+dependencies = [
+    "numpy>=2.0",
+    "starlette>=1.0",
+    "uvicorn>=0.30",
+    "websockets>=13",
+    "textual>=1.0",
+    "pypdf>=4.0",
+    "python-docx>=1.1",
+]
+
+[project.optional-dependencies]
+# Голос: Silero TTS через torch. torch ставить с индекса CPU:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+voice = ["torch>=2.9", "sounddevice>=0.5", "pillow>=11"]
+# Перевод: NLLB-200 в формате CTranslate2, int8, целиком на CPU
+translate = [
+    "ctranslate2>=4.8",
+    "transformers>=5.0",
+    "tokenizers>=0.23",
+    "sentencepiece>=0.2",
+    "huggingface_hub>=1.0",
+]
+all = ["bookreader[voice,translate]"]
+
+[project.scripts]
+bookreader = "bookreader.launcher:main"
+
+[project.urls]
+Homepage = "https://github.com/VistDmit/bookreader"
+Issues = "https://github.com/VistDmit/bookreader/issues"
+
+[tool.setuptools]
+packages = ["bookreader", "bookreader.books"]
+
+[tool.setuptools.package-data]
+bookreader = ["web/*.html", "requirements.txt"]
+
+[tool.ruff]
+line-length = 90
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = [
+    "E501",    # длину строк в строках-документациях не режем
+    "B008",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"bookreader/tests.py" = ["E402"]

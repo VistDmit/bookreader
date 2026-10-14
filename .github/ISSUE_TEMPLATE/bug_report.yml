@@ -1,0 +1,50 @@
+name: Ошибка
+description: Что-то не работает или работает не так
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Перед заполнением попробуйте `python run_bookreader.py doctor` —
+        там видно, чего не хватает.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: Что произошло
+      description: Команда, что ожидалось и что получилось на самом деле
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Как повторить
+      description: Шаги, на которых ошибка появляется каждый раз
+      placeholder: |
+        1. python run_bookreader.py web ~/книги/пример.fb2
+        2. нажал ▶
+        3. через минуту звук пропал
+    validations:
+      required: true
+
+  - type: textarea
+    id: log
+    attributes:
+      label: Вывод команды или лог
+      render: shell
+      description: Ошибка из терминала целиком
+
+  - type: input
+    id: book
+    attributes:
+      label: Книга
+      description: Формат и примерный размер (fb2, epub, pdf, docx, txt)
+      placeholder: fb2, 10 МБ
+
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Вывод doctor
+      render: shell
+      description: Скопируйте сюда результат `python run_bookreader.py doctor`

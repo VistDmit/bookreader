@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Книжный помощник</title>
+<style>
+  :root {
+    --bg: #14110f; --panel: #1d1917; --line: #2e2825; --text: #e9e2d8;
+    --muted: #a3968a; --accent: #e0a44c; --accent2: #7fb6a0;
+    --font: Georgia, "Times New Roman", serif;
+  }
+  body.light {
+    --bg: #f6f2ea; --panel: #fffdf8; --line: #ddd3c4; --text: #221d18;
+    --muted: #6c6258; --accent: #b5761f; --accent2: #3f7d68;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--text); font-family: var(--font);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  header {
+    display: flex; align-items: center; gap: 14px; padding: 10px 16px;
+    background: var(--panel); border-bottom: 1px solid var(--line);
+  }
+  header h1 { font-size: 17px; margin: 0; font-weight: 600; letter-spacing: .3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38vw; }
+  header .author { color: var(--muted); font-size: 13px; white-space: nowrap; }
+  .grow { flex: 1; }
+  button, select, input[type=number] {
+    background: #262120; color: var(--text); border: 1px solid var(--line);
+    border-radius: 7px; padding: 6px 11px; font-size: 13px; cursor: pointer;
+    font-family: inherit;
+  }
+  body.light button, body.light select { background: #efe7d9; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: #201812; border-color: var(--accent); }
+  button.icon { padding: 6px 10px; font-size: 15px; line-height: 1; }
+  input[type=range] { accent-color: var(--accent); }
+  main { flex: 1; display: flex; overflow: hidden; }
+  #text {
+    flex: 1; overflow-y: auto; padding: 28px max(24px, 8vw) 45vh;
+    scroll-behavior: smooth;
+  }
+  #text p {
+    font-size: var(--fs, 20px); line-height: 1.72; margin: 0 0 1em;
+    max-width: 760px; opacity: .62; transition: opacity .25s;
+  }
+  #text p.near { opacity: .88; }
+  #text p.now { opacity: 1; }
+  #text p.title { font-size: calc(var(--fs, 20px) * 1.5); font-weight: 700;
+    opacity: 1; margin: 1.6em 0 .7em; letter-spacing: .4px; }
+  #text p.subtitle { font-size: calc(var(--fs, 20px) * 1.15); font-style: italic; opacity: .9; }
+  #text p.wait { opacity: .45; }
+  #text p.wait .badge {
+    font-family: system-ui, sans-serif; font-size: 11px; letter-spacing: .5px;
+    color: var(--accent); border: 1px solid var(--accent); border-radius: 10px;
+    padding: 1px 7px; margin-left: 8px; white-space: nowrap; vertical-align: middle;
+  }
+  #text img { display: block; max-width: 420px; border-radius: 8px; margin: 10px 0 4px;
+    box-shadow: 0 6px 22px rgba(0,0,0,.45); }
+  aside {
+    width: 320px; border-left: 1px solid var(--line); background: var(--panel);
+    padding: 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
+  }
+  aside:empty { display: none; }
+  aside img { width: 100%; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.4); }
+  aside h3 { margin: 6px 0 0; font-size: 13px; color: var(--muted); font-weight: 500; }
+  footer {
+    background: var(--panel); border-top: 1px solid var(--line);
+    padding: 8px 16px; display: flex; align-items: center; gap: 12px; font-size: 13px;
+  }
+  .bar { width: 190px; }
+  #status { color: var(--muted); font-size: 12px; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; }
+  #dialog, #settings {
+    position: fixed; inset: 0; background: rgba(10,8,7,.75); display: none;
+    align-items: center; justify-content: center; z-index: 40;
+  }
+  #dialog.open, #settings.open { display: flex; }
+  .card.wide { width: min(880px, 94vw); }
+  fieldset {
+    border: 1px solid var(--line); border-radius: 10px; margin: 14px 0;
+    padding: 12px 14px 6px;
+  }
+  legend { color: var(--accent); font-size: 13px; padding: 0 6px; }
+  .field {
+    display: grid; grid-template-columns: 250px 190px 1fr; gap: 12px;
+    align-items: center; padding: 5px 0; font-size: 14px;
+  }
+  .field > label { line-height: 1.25; }
+  .field .hint { color: var(--muted); font-size: 12px; }
+  .field input[type=number], .field input[type=text], .field select {
+    background: #191512; color: var(--text); border: 1px solid var(--line);
+    border-radius: 7px; padding: 6px 9px; font-size: 13px; font-family: inherit;
+  }
+  body.light .field input, body.light .field select { background: #f3ecdf; }
+  .field input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); }
+  .field.hidden { display: none; }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 20px; width: min(640px, 92vw); max-height: 86vh; overflow: auto;
+  }
+  .card h2 { margin: 0 0 14px; font-size: 18px; }
+  .card input[type=text] { width: 100%; background: #191512; color: var(--text);
+    border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px;
+    font-family: inherit; font-size: 14px; }
+  .row { display: flex; gap: 8px; align-items: center; margin: 12px 0; flex-wrap: wrap; }
+  .recent { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+  .recent button { text-align: left; font-size: 13px; padding: 8px 10px; }
+  .label { color: var(--muted); font-size: 12px; }
+  #toast {
+    position: fixed; bottom: 64px; left: 50%; transform: translateX(-50%);
+    background: var(--accent); color: #201812; padding: 8px 16px; border-radius: 20px;
+    font-size: 13px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 50;
+  }
+  #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">Книжный помощник</h1>
+  <span class="author" id="author"></span>
+  <span class="grow"></span>
+  <button class="icon" id="play" title="Читать (пробел)">▶</button>
+  <button class="icon" id="stop" title="Стоп">■</button>
+  <button class="icon" id="prev" title="Предыдущий абзац">‹</button>
+  <button class="icon" id="next" title="Следующий абзац">›</button>
+  <label class="label">темп</label>
+  <input type="range" id="speed" min="0.7" max="1.6" step="0.05" value="1" class="bar">
+  <span class="label" id="speedVal">1.00×</span>
+  <label class="label">голос</label>
+  <select id="speaker"></select>
+  <label class="label">шрифт</label>
+  <input type="range" id="font" min="14" max="34" step="1" value="20" class="bar">
+  <button id="openBtn">Открыть</button>
+  <button id="settingsBtn" title="Настройки (s)">⚙</button>
+  <button id="themeBtn" title="Светлая тема">☀</button>
+</header>
+
+<main>
+  <div id="text">
+    <p style="opacity:.7">Открой книгу: кнопка «Открыть» сверху или перетащи файл сюда.
+       Поддерживаются FB2, EPUB, TXT, PDF и DOCX.</p>
+  </div>
+  <aside id="images"></aside>
+</main>
+
+<footer>
+  <div class="bar"><input type="range" id="seek" min="0" max="100" value="0"></div>
+  <span id="counter">0 / 0</span>
+  <span id="status">модели не загружены</span>
+</footer>
+
+<div id="dialog">
+  <div class="card">
+    <h2>Открыть книгу</h2>
+    <div class="row">
+      <input type="text" id="path" placeholder="/путь/к/книге.fb2">
+      <button class="primary" id="openGo">Открыть</button>
+    </div>
+    <div class="row">
+      <input type="file" id="file" style="font-size:13px">
+    </div>
+    <div class="recent" id="recent"></div>
+    <div class="row"><button id="closeDlg">Закрыть</button></div>
+  </div>
+</div>
+<div id="settings">
+  <div class="card wide">
+    <h2>Настройки</h2>
+    <p class="label">Значения сохраняются сразу и действуют в веб-читалке и в терминале.</p>
+    <div id="settingsBody"></div>
+    <div class="row">
+      <button class="primary" id="previewVoice">▶ Послушать голос</button>
+      <button id="testTranslate">Проверить перевод</button>
+      <button id="closeSettings">Закрыть</button>
+      <span class="label" id="settingsHint"></span>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+<audio id="audio" preload="auto"></audio>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const el = {
+  text: $("text"), images: $("images"), title: $("title"), author: $("author"),
+  play: $("play"), stop: $("stop"), prev: $("prev"), next: $("next"),
+  speed: $("speed"), speedVal: $("speedVal"), speaker: $("speaker"),
+  font: $("font"), seek: $("seek"), counter: $("counter"), status: $("status"),
+  dialog: $("dialog"), path: $("path"), file: $("file"), recent: $("recent"),
+  toast: $("toast"), audio: $("audio"), openBtn: $("openBtn"),
+  settingsBtn: $("settingsBtn"), settings: $("settings"),
+  settingsBody: $("settingsBody"), settingsHint: $("settingsHint"),
+};
+
+// --- настройки: форма строится из схемы сервера ---------------------------
+let settingsSchema = null;
+const settingsInputs = new Map();     // ключ -> {node, spec}
+
+async function loadSettings() {
+  settingsSchema = await api("/api/settings");
+  buildSettings();
+}
+
+function buildSettings() {
+  el.settingsBody.innerHTML = "";
+  settingsInputs.clear();
+  settingsSchema.groups.forEach((group) => {
+    const box = document.createElement("fieldset");
+    const legend = document.createElement("legend");
+    legend.textContent = group.label;
+    box.appendChild(legend);
+    group.fields.forEach((spec) => box.appendChild(settingRow(spec)));
+    el.settingsBody.appendChild(box);
+  });
+  applyVisibility();
+}
+
+function settingRow(spec) {
+  const row = document.createElement("div");
+  row.className = "field";
+
+  const name = document.createElement("label");
+  name.textContent = spec.label;
+
+  let input;
+  if (spec.kind === "bool") {
+    input = document.createElement("input");
+    input.type = "checkbox";
+    input.checked = Boolean(spec.value);
+  } else if (spec.kind === "choice") {
+    input = document.createElement("select");
+    (spec.choices || []).forEach((choice) => {
+      const option = document.createElement("option");
+      option.value = choice; option.textContent = choice;
+      input.appendChild(option);
+    });
+    input.value = String(spec.value);
+  } else {
+    input = document.createElement("input");
+    input.type = spec.kind === "int" ? "number" : (spec.kind === "float" ? "number" : "text");
+    if (spec.min !== null && spec.min !== undefined) { input.min = spec.min; }
+    if (spec.max !== null && spec.max !== undefined) { input.max = spec.max; }
+    if (spec.step) { input.step = spec.step; }
+    input.value = spec.value;
+  }
+
+  const hint = document.createElement("span");
+  hint.className = "hint";
+  hint.textContent = spec.hint || "";
+
+  const save = async () => {
+    const value = spec.kind === "bool" ? input.checked
+                : (spec.kind === "choice" ? input.value : input.value);
+    input.disabled = true;
+    try {
+      const answer = await api("/api/settings", {
+        method: "PUT", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({values: {[spec.key]: value}}),
+      });
+      if (answer.errors && answer.errors.length) toast(answer.errors[0]);
+      if (answer.restart && answer.restart.length) {
+        toast(answer.restart[0] + " — нужен перезапуск сервера");
+      }
+      await loadSettings();
+      applyLocally(spec.key);
+    } catch (err) {
+      toast(err.message || "не сохранилось");
+    } finally {
+      input.disabled = false;
+    }
+  };
+
+  if (spec.kind === "bool") input.onchange = save;
+  else if (spec.kind === "choice") input.onchange = save;
+  else { input.onchange = save; input.onkeydown = (e) => { if (e.key === "Enter") save(); }; }
+
+  settingsInputs.set(spec.key, {node: row, input, spec});
+  row.appendChild(name); row.appendChild(input); row.appendChild(hint);
+  return row;
+}
+
+// часть настроек имеет смысл только для одного движка
+function applyVisibility() {
+  const current = {};
+  settingsInputs.forEach(({spec}, key) => {
+    const {input} = settingsInputs.get(key);
+    current[key] = spec.kind === "bool" ? input.checked : input.value;
+  });
+  settingsInputs.get("voice_model").node.classList.toggle(
+    "hidden", current.voice_engine !== "silero");
+  settingsInputs.get("voice_speaker").node.classList.toggle(
+    "hidden", current.voice_engine !== "silero");
+  settingsInputs.get("piper_model").node.classList.toggle(
+    "hidden", current.voice_engine !== "piper");
+  settingsInputs.get("nllb_repo").node.classList.toggle(
+    "hidden", current.translate_engine !== "nllb");
+}
+
+// изменения, которые видны сразу и в этом окне
+function applyLocally(key) {
+  const config = settingsSchema ? settingsSchema.values : null;
+  if (!config) return;
+  if (key === "speed") { el.speed.value = config.speed;
+    el.speedVal.textContent = Number(config.speed).toFixed(2) + "×"; }
+  if (key === "font_size") { el.font.value = config.font_size;
+    document.documentElement.style.setProperty("--fs", config.font_size + "px"); }
+  if (key === "theme") document.body.classList.toggle("light", config.theme === "light");
+  if (key === "voice_model" || key === "voice_engine") {
+    el.speaker.innerHTML = "";
+    (config.speakers || []).forEach((speaker) => {
+      const option = document.createElement("option");
+      option.value = speaker; option.textContent = speaker;
+      el.speaker.appendChild(option);
+    });
+  }
+}
+
+async function openSettings() {
+  el.settings.classList.add("open");
+  el.settingsHint.textContent = "загружаю...";
+  await loadSettings();
+  el.settingsHint.textContent = "всё сохраняется сразу";
+}
+
+$("closeSettings").onclick = () => el.settings.classList.remove("open");
+el.settingsBtn.onclick = openSettings;
+
+$("previewVoice").onclick = async () => {
+  el.settingsHint.textContent = "озвучиваю образец...";
+  try {
+    const response = await fetch("/api/settings/preview", {method: "POST"});
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(text.slice(0, 120));
+    }
+    el.audio.src = URL.createObjectURL(await response.blob());
+    await el.audio.play();
+    el.settingsHint.textContent = "это текущий голос";
+  } catch (err) {
+    el.settingsHint.textContent = "не получилось: " + err.message;
+  }
+};
+
+$("testTranslate").onclick = async () => {
+  el.settingsHint.textContent = "перевожу...";
+  try {
+    const answer = await api("/api/settings/translate", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({text: ""}),
+    });
+    el.settingsHint.textContent = `${answer.source} → ${answer.engine}, `
+      + `${answer.seconds} с: ${answer.text}`;
+  } catch (err) {
+    el.settingsHint.textContent = "перевод не получился: " + err.message;
+  }
+};
+
+let book = null;      // открытая книга
+let current = 0;      // текущий абзац
+let playing = false;
+let wantPlay = false;
+let sockets = 1;
+const cache = new Map();   // index -> {t: текст, ready, tr}
+
+function toast(text) {
+  el.toast.textContent = text;
+  el.toast.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.toast.classList.remove("show"), 2600);
+}
+
+function fmt(n) { return Math.round(n).toLocaleString("ru-RU"); }
+
+// --- сеть -------------------------------------------------------------------
+async function api(path, options) {
+  const response = await fetch(path, options);
+  const type = response.headers.get("content-type") || "";
+  if (type.includes("application/json")) return response.json();
+  if (!response.ok) throw new Error(await response.text());
+  return response;
+}
+
+async function post(path, body) {
+  return api(path, {method: "POST", headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify(body || {})});
+}
+
+// --- книга ------------------------------------------------------------------
+async function openBook(path) {
+  toast("Открываю книгу...");
+  const data = await post("/api/open", {path});
+  if (data.error) { toast(data.error); return; }
+  book = data;
+  el.dialog.classList.remove("open");
+  el.title.textContent = book.title || "Без названия";
+  el.author.textContent = book.author || "";
+  document.title = (book.title || "Книжный помощник");
+  cache.clear();
+  current = 0;
+  render();
+  fillSpeakers(book.info || {});
+  updateStatus(book.info || {});
+  await fetchRecent();
+}
+
+function render() {
+  const blocks = (book.blocks_text || []);
+  el.text.innerHTML = "";
+  blocks.forEach((b) => el.text.appendChild(paragraph(b)));
+  loaded = blocks.length;
+  const sentinel = document.createElement("div");
+  sentinel.id = "more";
+  sentinel.style.height = "1px";
+  el.text.appendChild(sentinel);
+  watchMore(sentinel);
+  highlight(current, false);
+}
+
+let loaded = 0;
+let loading = false;
+
+function watchMore(sentinel) {
+  const observer = new IntersectionObserver((entries) => {
+    if (entries.some((e) => e.isIntersecting)) loadMore(sentinel);
+  }, {root: el.text, rootMargin: "600px"});
+  observer.observe(sentinel);
+}
+
+async function loadMore(sentinel) {
+  if (loading || !book) return;
+  const total = book.info.blocks || 0;
+  if (loaded >= total) return;
+  loading = true;
+  try {
+    const data = await api(`/api/blocks?from=${loaded}&count=200`);
+    data.blocks.forEach((b) => el.text.insertBefore(paragraph(b), sentinel));
+    loaded = data.from + data.blocks.length;
+    if (loaded >= data.total) sentinel.remove();
+  } catch (err) {
+    /* книга кончилась или связь мигнула — догрузим при следующей прокрутке */
+  }
+  loading = false;
+}
+
+function paragraph(b) {
+  const node = document.createElement("p");
+  node.dataset.index = b.i;
+  if (b.k === "title") node.classList.add("title");
+  if (b.k === "subtitle") node.classList.add("subtitle");
+  node.textContent = b.t || "";
+  // книга иностранная, абзац ещё не переведён — помечаем, чтобы не путать
+  if (needsTranslation() && b.tr === false) {
+    node.classList.add("wait");
+    const badge = document.createElement("span");
+    badge.className = "badge";
+    badge.textContent = "переводится";
+    node.appendChild(badge);
+  }
+  (b.img || []).forEach((name) => {
+    const img = document.createElement("img");
+    img.src = `/images/${book.key}/images/${name}`;
+    img.loading = "lazy";
+    img.alt = "иллюстрация";
+    node.appendChild(img);
+  });
+  cache.set(b.i, b);
+  return node;
+}
+
+function needsTranslation() {
+  return book && book.info && book.info.translate && book.info.translate !== "off";
+}
+
+// обновляем абзацы, которые попали в экран, но ещё не переведены
+let refreshing = false;
+async function refreshPending() {
+  if (refreshing || !needsTranslation()) return;
+  const top = el.text.scrollTop - el.text.clientHeight;
+  const bottom = top + el.text.clientHeight * 3;
+  const targets = [];
+  document.querySelectorAll("#text p.wait").forEach((node) => {
+    if (targets.length >= 6) return;
+    if (node.offsetTop > top && node.offsetTop < bottom) {
+      targets.push(Number(node.dataset.index));
+    }
+  });
+  if (!targets.length) return;
+  refreshing = true;
+  for (const index of targets) {
+    try { await refreshBlock(index); } catch (err) { /* попробуем позже */ }
+  }
+  refreshing = false;
+}
+
+function blockNode(index) {
+  return el.text.querySelector(`p[data-index="${index}"]`);
+}
+
+async function refreshBlock(index) {
+  const node = blockNode(index);
+  if (!node) return null;
+  const data = await api(`/api/block/${index}`);
+  const b = cache.get(index);
+  if (b && (b.tr === data.tr) && (b.t === data.t)) return b;
+  const fresh = paragraph(data);
+  node.replaceWith(fresh);
+  if (data.i === current) fresh.classList.add("now");
+  return data;
+}
+
+function highlight(index, scroll = true) {
+  current = index;
+  const nodes = el.text.querySelectorAll("p");
+  let near = index;
+  for (const node of nodes) {
+    const i = Number(node.dataset.index);
+    node.classList.toggle("now", i === index);
+    node.classList.toggle("near", Math.abs(i - index) <= 2 && i !== index);
+    if (Math.abs(i - index) === 2) near = i;
+  }
+  const node = blockNode(index) || blockNode(near);
+  if (node && scroll) {
+    const top = node.offsetTop - el.text.clientHeight * 0.32;
+    el.text.scrollTop = Math.max(0, top);
+  }
+  el.seek.value = book && book.info.blocks ? Math.round(index * 100 / book.info.blocks) : 0;
+  el.counter.textContent = book ? `${fmt(index + 1)} / ${fmt(book.info.blocks || 0)}` : "0 / 0";
+  showImages(index);
+  if (book) post("/api/control", {action: "goto", index}).catch(() => {});
+}
+
+function showImages(index) {
+  el.images.innerHTML = "";
+  let found = 0;
+  for (let i = index; i < index + 3 && found < 3; i++) {
+    const b = cache.get(i);
+    if (b && b.img && b.img.length) {
+      const title = document.createElement("h3");
+      title.textContent = `Иллюстрация к абзацу ${i + 1}`;
+      el.images.appendChild(title);
+      b.img.forEach((name) => {
+        const img = document.createElement("img");
+        img.src = `/images/${book.key}/images/${name}`;
+        el.images.appendChild(img);
+        found++;
+      });
+    }
+  }
+}
+
+// --- озвучка ----------------------------------------------------------------
+async function audioFor(index) {
+  for (let attempt = 0; attempt < 600; attempt++) {
+    const response = await fetch(`/api/audio/${index}`, {cache: "no-store"});
+    if (response.status === 200) return await response.blob();
+    if (response.status === 202) { await sleep(350); continue; }
+    if (response.status === 503) { await sleep(1200); continue; }
+    throw new Error("озвучка недоступна");
+  }
+  throw new Error("озвучка не готовится");
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function playFrom(index) {
+  if (!book) return;
+  wantPlay = true;
+  setPlayIcon();
+  const total = book.info.blocks || 0;
+  for (let i = index; i < total && wantPlay; i++) {
+    if (!wantPlay) return;
+    highlight(i, true);
+    refreshBlock(i).catch(() => {});
+    let blob;
+    try { blob = await audioFor(i); }
+    catch (err) { toast(err.message); break; }
+    if (!wantPlay) return;
+    await new Promise((resolve) => {
+      const audio = el.audio;
+      audio.src = URL.createObjectURL(blob);
+      audio.playbackRate = Number(el.speed.value);
+      audio.onended = () => { URL.revokeObjectURL(audio.src); resolve(); };
+      audio.onerror = () => { URL.revokeObjectURL(audio.src); resolve(); };
+      audio.play().catch(() => { resolve(); });
+    });
+    refreshBlock(i + 1).catch(() => {});
+  }
+  if (wantPlay) { wantPlay = false; setPlayIcon(); toast("Книга прочитана"); }
+}
+
+function setPlayIcon() {
+  el.play.textContent = wantPlay ? "❚❚" : "▶";
+  playing = wantPlay;
+}
+
+async function togglePlay() {
+  if (!book) { el.dialog.classList.add("open"); return; }
+  if (wantPlay) { wantPlay = false; el.audio.pause(); setPlayIcon(); return; }
+  playFrom(current);
+}
+
+function stopAll() {
+  wantPlay = false;
+  el.audio.pause();
+  setPlayIcon();
+  post("/api/control", {action: "stop"}).catch(() => {});
+}
+
+// --- события страницы -------------------------------------------------------
+el.play.onclick = togglePlay;
+el.stop.onclick = stopAll;
+el.prev.onclick = () => playFrom(Math.max(0, current - 1));
+el.next.onclick = () => playFrom(Math.min((book?.info.blocks || 1) - 1, current + 1));
+el.speed.oninput = () => {
+  el.speedVal.textContent = Number(el.speed.value).toFixed(2) + "×";
+  el.audio.playbackRate = Number(el.speed.value);
+};
+el.font.oninput = () => {
+  document.documentElement.style.setProperty("--fs", el.font.value + "px");
+};
+el.seek.oninput = () => {
+  if (!book) return;
+  const index = Math.round(book.info.blocks * Number(el.seek.value) / 100);
+  highlight(index, true);
+};
+el.openBtn.onclick = () => { el.dialog.classList.add("open"); el.path.focus(); };
+$("closeDlg").onclick = () => el.dialog.classList.remove("open");
+$("openGo").onclick = () => openBook(el.path.value.trim());
+el.path.onkeydown = (e) => { if (e.key === "Enter") openBook(el.path.value.trim()); };
+$("themeBtn").onclick = () => document.body.classList.toggle("light");
+el.file.onchange = async () => {
+  if (!el.file.files.length) return;
+  const form = new FormData();
+  form.append("file", el.file.files[0]);
+  toast("Загружаю файл...");
+  const data = await api("/api/upload", {method: "POST", body: form});
+  if (data.error) { toast(data.error); return; }
+  book = data; cache.clear(); current = 0; render();
+  el.dialog.classList.remove("open");
+  el.title.textContent = book.title; el.author.textContent = book.author || "";
+  fillSpeakers(book.info || {}); updateStatus(book.info || {});
+};
+
+document.addEventListener("keydown", (event) => {
+  if (event.target.tagName === "INPUT" || event.target.tagName === "SELECT") return;
+  if (event.key === "s" || event.key === "m" || event.key === "ь" || event.key === "ъ") {
+    event.preventDefault(); openSettings(); return;
+  }
+  if (event.key === "Escape") {
+    el.settings.classList.remove("open");
+    el.dialog.classList.remove("open");
+    return;
+  }
+  if (event.code === "Space") { event.preventDefault(); togglePlay(); }
+  if (event.key === "ArrowRight" && event.shiftKey) el.next.click();
+  if (event.key === "ArrowLeft" && event.shiftKey) el.prev.click();
+  if (event.key === "+" || event.key === "=") el.font.value = Math.min(34, +el.font.value + 2), el.font.oninput();
+  if (event.key === "-") el.font.value = Math.max(14, +el.font.value - 2), el.font.oninput();
+});
+
+document.addEventListener("dragover", (e) => e.preventDefault());
+document.addEventListener("drop", async (e) => {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  const form = new FormData();
+  form.append("file", file);
+  const data = await api("/api/upload", {method: "POST", body: form});
+  if (data.error) { toast(data.error); return; }
+  book = data; cache.clear(); current = 0; render();
+  el.title.textContent = book.title; el.author.textContent = book.author || "";
+  fillSpeakers(book.info || {}); updateStatus(book.info || {});
+});
+
+// --- статус -----------------------------------------------------------------
+function fillSpeakers(info) {
+  el.speaker.innerHTML = "";
+  (info.speakers || []).forEach((speaker) => {
+    const option = document.createElement("option");
+    option.value = speaker; option.textContent = speaker;
+    el.speaker.appendChild(option);
+  });
+  if (info.voice_speaker) el.speaker.value = info.voice_speaker;
+  post("/api/info").then((i) => { if (i.speakers) fillSpeakers(i); }).catch(() => {});
+}
+el.speaker.onchange = () => post("/api/control", {action: "voice", speaker: el.speaker.value})
+  .then((r) => toast("голос: " + (r.voice || el.speaker.value)))
+  .catch(() => toast("не сменился"));
+
+function updateStatus(info) {
+  if (!info || !info.title) { el.status.textContent = "книга не открыта"; return; }
+  const lang = (info.lang || "?").toUpperCase();
+  const tr = info.translate === "off" ? "без перевода"
+           : (info.translate === "nllb" ? "перевод NLLB" : "перевод онлайн");
+  el.status.textContent =
+    `${info.format || ""} · язык ${lang} · ${tr} · ${info.voice || ""}` +
+    (info.error ? ` · ошибка: ${info.error}` : "");
+}
+
+async function fetchRecent() {
+  const rows = await api("/api/recent").catch(() => []);
+  el.recent.innerHTML = "";
+  rows.forEach((row) => {
+    const button = document.createElement("button");
+    button.textContent = `${row.title || row.path} — ${row.format}, ` +
+      `${fmt(row.blocks || 0)} абз.${row.path}`;
+    button.onclick = () => openBook(row.path);
+    el.recent.appendChild(button);
+  });
+}
+
+function connect() {
+  const scheme = location.protocol === "https:" ? "wss" : "ws";
+  const socket = new WebSocket(`${scheme}://${location.host}/ws`);
+  socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.event === "settings") {
+      // настройки сменили в другой вкладке или в терминале — подхватываем
+      settingsSchema.values = data.values;
+      if (el.settings.classList.contains("open")) loadSettings();
+      applyLocally("speed"); applyLocally("font_size"); applyLocally("theme");
+    }
+    if (data.event === "progress" || data.event === "opened") updateStatus(data.info);
+    if (data.event === "progress" && data.info && data.info.ready_blocks) {
+      el.status.textContent += ` · готово ${data.info.ready_blocks}`;
+    }
+  };
+  socket.onclose = () => setTimeout(connect, 3000);
+}
+
+el.text.onscroll = () => refreshPending();
+setInterval(refreshPending, 2500);
+fetchRecent();
+connect();
+post("/api/info").then((info) => { updateStatus(info); fillSpeakers(info); }).catch(() => {});
+loadSettings().then(() => { applyLocally("speed"); applyLocally("font_size"); applyLocally("theme"); })
+  .catch(() => {});
+setInterval(() => post("/api/info").then(updateStatus).catch(() => {}), 5000);
+document.documentElement.style.setProperty("--fs", "20px");
+
+// открыть книгу прямо из адреса: /?book=/путь/к/книге.fb2
+const wanted = new URLSearchParams(location.search).get("book");
+if (wanted) { el.path.value = wanted; openBook(wanted); }
+</script>
+</body>
+</html>

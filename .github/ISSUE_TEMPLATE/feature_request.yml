@@ -1,0 +1,35 @@
+name: Предложение
+description: Чего не хватает книжному помощнику
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Что хочется
+      description: Опишите словами пользователя: «когда я читаю книгу, мне не хватает…»
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Зачем это нужно
+      description: Как это облегчит чтение
+
+  - type: dropdown
+    id: where
+    attributes:
+      label: Где должно жить
+      options:
+        - Веб-читалка
+        - Терминал
+        - Оба интерфейса
+        - Команды CLI
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Заметки
+      description: Ограничения, которые вы уже обдумали

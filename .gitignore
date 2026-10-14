@@ -1,0 +1,37 @@
+# окружение и данные — никогда в репозиторий
+.venv/
+venv/
+env/
+
+# общие данные машины: ключи и справочник (info -> .pass/info)
+.pass/
+info
+
+# чужие проекты, лежащие рядом
+archive/
+
+# состояние книжного помощника: модели, кэш, база, настройки, скриншоты
+bookreader/state/
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.eggs/
+
+# инструменты и редакторы
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# операционная система
+.DS_Store
+Thumbs.db
+
+# локальные переопределения настроек
+bookreader/state/config.local.json
+.env
